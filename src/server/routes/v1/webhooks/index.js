@@ -30,6 +30,47 @@ db.collection('books')
     routes.post('/', (req, res) => {
       const agent = new WebhookClient({ request: req, response: res });
 
+      function sameGenreBooks() {
+        const contextParams = agent.context.get('book_description').parameters;
+
+        return db
+          .collection('books')
+          .where('genres', 'array-contains', contextParams.bookGenre)
+          .limit(10)
+          .get()
+          .then(snapshot => {
+            let books = [];
+            snapshot.forEach(doc => {
+              let book = {};
+              book.title = doc.data().title;
+              book.bookId = doc.data()['book_id'];
+              book.imageUrl = doc.data()['m_image_url'];
+              book.authorName = doc.data()['author_name'];
+              book.amazonPrice = doc.data()['amazon_price'];
+              book.authorId = doc.data()['author_id'];
+              book.bookGenre = contextParams.bookGenre;
+              books.push(book);
+            });
+            agent.context.set({
+              name: 'book_recommendations',
+              lifespan: 1,
+              parameters: {
+                mode: 'CB',
+                book: req.body.queryResult.parameters.book,
+                bookTitle: contextParams.bookTitle,
+                bookRating: contextParams.bookRating,
+                bookAuthor: contextParams.bookAuthor,
+                books: books
+              }
+            });
+            agent.add(`Here are some more books from ${contextParams.bookGenre} genre :-`);
+          })
+          .catch(err => {
+            agent.add('Something went wrong on the server side. We will fix it asap.');
+            console.log(err);
+          });
+      }
+
       function sameAuthorBooks() {
         const contextParams = agent.context.get('book_description').parameters;
         const bookId = contextParams.book;
@@ -143,6 +184,7 @@ db.collection('books')
                   bookRating: doc.data()['goodreads_rating'],
                   bookAuthor: doc.data()['author_name'],
                   bookPrice: doc.data()['amazon_price'],
+                  bookGenre: doc.data()['genres'][0],
                   imageUrl: doc.data()['s_image_url']
                 }
               });
@@ -247,6 +289,7 @@ db.collection('books')
       intentMap.set('buy_book', addBookToCart);
       intentMap.set('clear_cart', clearCart);
       intentMap.set('author_books', sameAuthorBooks);
+      intentMap.set('genre_books', sameGenreBooks);
 
       agent.handleRequest(intentMap);
     });
