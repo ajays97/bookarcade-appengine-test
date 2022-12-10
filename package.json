@@ -16,7 +16,7 @@
     "body-parser": "^1.19.0",
     "compute-cosine-similarity": "^1.0.0",
     "dialogflow-fulfillment": "dialogflow/dialogflow-fulfillment-nodejs",
-    "express": "^4.16.3",
+    "express": "^4.17.3",
     "fast-csv": "^2.5.0",
     "firebase-admin": "^7.3.0",
     "mathjs": "^5.9.0",
